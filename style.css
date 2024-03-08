@@ -1,0 +1,55 @@
+*,
+*::before,
+*:after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    height: 100vh;
+    overflow: hidden;
+    display: grid;
+    place-content: center;
+    align-items: center;
+}
+
+h1 {
+    position: relative;
+}
+
+h1, h2 {
+    font-size: 10vh;
+    cursor: pointer;
+    transition: 0.5s;
+}
+
+h2 {
+    scale: 0.2;
+    opacity: 0;
+    position: absolute;
+    left: 47%;
+}
+
+@keyframes shake {
+    0% {transform: rotate(0deg);}
+    25% {transform: rotate(10deg);}
+    75% {transform: rotate(-10deg);}
+    100% {transform: rotate(0deg);}
+}
+
+@keyframes crazyshake {
+    0% {transform: rotate(0deg);}
+    25% {transform: rotate(5deg);}
+    75% {transform: rotate(-5deg);}
+    100% {transform: rotate(0deg);}
+}
+
+h1:hover {
+    animation: shake 0.5s infinite ease-in-out;
+}
+
+h1:active {
+    font-size: 15vh;
+    animation: crazyshake 0.25s infinite ease-in-out;
+}
