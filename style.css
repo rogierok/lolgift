@@ -36,13 +36,15 @@ h2 {
 }
 
 button {
-    margin-top: 4vh;
-    border-radius: 100px;
     height: 5vh;
     width: 10vh;
+    margin-top: 4vh;
     background-color: orange;
+    border-radius: 100px;
     border: none;
     opacity: 0;
+
+    cursor: pointer;
     pointer-events: none;
 
     font-size: 15px;
@@ -55,23 +57,16 @@ button {
 
 @keyframes shake {
     0% {transform: rotate(0deg);}
-    25% {transform: rotate(10deg);}
-    75% {transform: rotate(-10deg);}
-    100% {transform: rotate(0deg);}
-}
-
-@keyframes crazyshake {
-    0% {transform: rotate(0deg);}
     25% {transform: rotate(5deg);}
     75% {transform: rotate(-5deg);}
     100% {transform: rotate(0deg);}
 }
 
 h1:hover {
-    animation: shake 0.5s infinite ease-in-out;
+    animation: shake 0.4s infinite ease-in-out;
 }
 
 h1:active {
     font-size: 15vh;
-    animation: crazyshake 0.25s infinite ease;
+    animation: shake 0.25s infinite ease;
 }
