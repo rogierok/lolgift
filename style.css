@@ -12,6 +12,7 @@ body {
     display: grid;
     place-content: center;
     align-items: center;
+    transition: 0.5s;
 }
 
 div {
