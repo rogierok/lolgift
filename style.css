@@ -36,6 +36,21 @@ h2 {
     text-align: center;
 }
 
+p, button {
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+    font-weight: bold;
+    opacity: 0;
+
+    transition-delay: 0.5s;
+}
+
+p {
+    color: black;
+    margin-top: 5px;
+    transition: 0.5s
+}
+
 button {
     height: 5vh;
     width: 10vh;
@@ -43,17 +58,13 @@ button {
     background-color: orange;
     border-radius: 100px;
     border: none;
-    opacity: 0;
+
+    color: white;
 
     cursor: pointer;
     pointer-events: none;
-
-    font-size: 15px;
-    font-weight: bold;
-    color: white;
-
+    
     transition: 0.5s opacity;
-    transition-delay: 0.5s;
 }
 
 @keyframes shake {
