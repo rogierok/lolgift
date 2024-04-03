@@ -1,7 +1,6 @@
 let gift = document.getElementById("gift")
 let item = document.getElementById("item")
 let again = document.getElementById("again")
-let background = document.getElementById("background")
 let triesleft = document.getElementById("tries")
 
     triesleft.style.opacity = 0
@@ -13,8 +12,6 @@ again.addEventListener("click", reset)
 
 var tries = Number(localStorage["tries"])
 var time = localStorage["time"]
-
-var date = new Date();
 
 if (localStorage.getItem("tries") === null){
     tries = 10;
@@ -30,9 +27,12 @@ if (Number(localStorage["tries"]) > 0) {
     triesleft.style.scale = 1
 }
 
-else if (Number(localStorage.getItem("time")) !== date.getDay()) {
+else if (Number(localStorage.getItem("time")) < Date.now() + 43200000) {
     tries = 10
+    triesleft.innerHTML = "Welcome back!"
 }
+
+var color = "#FFFFFF"
 
 var trashitems = ["🫘", "🥫", "🥦", "🥒"]
 var items = ["🍓", "🥪", "🧃", "🍌", "🍉", "🍇", "🍎", "🥑", "🍊", "🍋", "🍍", "🍐", "🍒", "🥝", "🥥"]
@@ -44,7 +44,7 @@ function opening() {
         tries -= 1
         triesleft.innerHTML = String(tries) + " Tries left"
         localStorage['tries'] = tries
-        localStorage['time'] = date.getDay()
+        localStorage['time'] = Date.now()
         
         again.style.scale = 1
 
@@ -55,20 +55,22 @@ function opening() {
 
         if (weight >= 850 &&  weight <= 950) {
             randomarray = rareitems
-            background.style.backgroundColor = "#567BFF"
+            color = "#567BFF"
         }
         else if (weight > 950 &&  weight <= 999) {
             randomarray = mythicitems
-            background.style.backgroundColor = "#E11DE2"
+            color = "#E11DE2"
         }
         else if (weight >= 0 &&  weight <= 150) {
             randomarray = trashitems
-            background.style.backgroundColor = "#603400"
+            color = "#603400"
         }
         else {
             randomarray = items
-            background.style.backgroundColor = "#D1EFFF"
+            color = "#D1EFFF"
         }
+
+        document.getElementById("background").style.backgroundColor = color
 
         var randomitem = randomarray[Math.floor(Math.random() * randomarray.length)]
 
@@ -104,5 +106,5 @@ function reset () {
     triesleft.style.opacity = 0
     triesleft.style.scale = 0
 
-    background.style.backgroundColor = "#FFFFFF"
+    document.getElementById("background").style.backgroundColor = "#FFFFFF"
 }
