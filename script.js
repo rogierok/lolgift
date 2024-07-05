@@ -13,23 +13,23 @@ again.addEventListener("click", reset)
 var tries = Number(localStorage["tries"])
 var time = localStorage["time"]
 
-if (localStorage.getItem("tries") === null){
-    tries = 10;
-    triesleft.innerHTML = "Welcome! Every day you get " + String(tries) + " Tries! Goodluck"
+if (Number(localStorage["tries"]) === null){
+    tries = 10
+    triesleft.innerHTML = "You have" + String(tries) + " gifts to open!"
     triesleft.style.opacity = 0.5
     triesleft.style.scale = 1
 }
 
 if (Number(localStorage["tries"]) > 0) {
     tries = Number(localStorage["tries"])
-    triesleft.innerHTML = "You still have " + String(tries) + " Tries left from your last session!"
+    triesleft.innerHTML = "You still have " + String(tries) + " gifts left to open from last time!"
     triesleft.style.opacity = 0.5
     triesleft.style.scale = 1
 }
 
-else if (Number(localStorage.getItem("time")) < Date.now() + 43200000) {
+else if (Number(localStorage.getItem("time")) < Date.now() - 43200000) {
     tries = 10
-    triesleft.innerHTML = "Welcome back!"
+    triesleft.innerHTML = "I gave you some gifts to open! you have "+ String(tries) + " gifts!"
 }
 
 var color = "#FFFFFF"
@@ -42,7 +42,6 @@ var mythicitems = ["🥐", "🧀", "🍕", "🍪"]
 function opening() {
     if (tries > 0) {
         tries -= 1
-        triesleft.innerHTML = String(tries) + " Tries left"
         localStorage['tries'] = tries
         localStorage['time'] = Date.now()
         
@@ -70,6 +69,8 @@ function opening() {
             color = "#D1EFFF"
         }
 
+        triesleft.innerHTML = String(tries) + " gifts left!"
+
         document.getElementById("background").style.backgroundColor = color
 
         var randomitem = randomarray[Math.floor(Math.random() * randomarray.length)]
@@ -86,7 +87,7 @@ function opening() {
     }
 
     else {
-        triesleft.innerHTML = String(tries) + " Tries left, Try again tomorow!"
+        triesleft.innerHTML = String(tries) + " gifts left, you opened all your gifts for today ):"
         triesleft.style.opacity = 0.5
         triesleft.style.scale = 1
     }
