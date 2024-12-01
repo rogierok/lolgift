@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spell Checker</title>
+  <style>
+    * {
+        font-family: Verdana, sans-serif;
+        padding: 0;
+        margin: 0;
+    }
+    body {
+        box-sizing: border-box;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+        background-color: #e7e7e7;
+    }
+    #editor {
+        border: 2px solid rgba(85, 83, 83, 0.25);
+        background-color: white;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        box-sizing: border-box;
+        padding: 20px;
+        width: 80vw;
+        min-height: 60vh;
+        font-size: 16px;
+        line-height: 1.5;
+        outline: none;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    #editor:empty:not(:focus):before {
+        content: "Start typing here...";
+        color: rgb(85, 83, 83);
+        cursor: text;
+    }
+    .misspelled {
+        text-decoration: underline solid #ff5757 2px;
+        background-color: rgba(255, 87, 87, 0.33);
+        cursor: pointer;
+    }
+    .popup {
+        font-size: 16px;
+        margin-top: 4px;
+        box-sizing: border-box;
+        position: absolute;
+        display: none;
+        flex-direction: column;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        padding: 12px;
+        z-index: 1000;
+    }
+    .heading, .footing {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: rgb(85, 83, 83);
+    }
+    .heading {
+        margin-bottom: 6px;
+        height: 18px;
+    }
+    .footing {
+        margin-top: 12px;
+        height: 16px;
+    }
+    .suggestion {
+        display: flex;
+        flex-direction: row;
+    }
+    .suggestion button {
+        box-sizing: border-box;
+        background-color: #47b382ce;
+        padding: 0px 6px;
+        font-size: 16px;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        margin: 0px 4px 0px 0px;
+        height: 30px;
+        cursor: pointer;
+        transition: 0.25s;
+    }
+
+    .ignore {
+        color: rgb(85, 83, 83);
+        font-size: 16px;
+        border: none;
+        background-color: white;
+        cursor: pointer;
+    }
+
+    .ignore:hover {
+        text-decoration: underline;
+    }
+
+    .suggestion button:hover {
+        transform: translate(0px, -2px);
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <div id="editor" contenteditable="true" spellcheck="false" placeholder="Describe yourself here..."></div>
+    <div id="popup" class="popup">
+        <div class="heading">
+            <p>
+                <svg width="16px" height="16px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 16.584V18.9996C10 20.1042 10.8954 20.9996 12 20.9996C13.1046 20.9996 14 20.1042 14 18.9996L14 16.584M12 3V4M18.3643 5.63574L17.6572 6.34285M5.63574 5.63574L6.34285 6.34285M4 12H3M21 12H20M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Suggestions:
+            </p>
+        </div>
+        <div id="suggestion" class="suggestion"></div>
+        <div class="footing">
+            <button id="ignorebutton" class="ignore">Ignore</button>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    let wordDataset = [];
+    
+    fetch('words_alpha.txt')
+      .then(response => response.text())
+      .then(data => {
+        wordDataset = data.split(/\r?\n/).map(word => word.trim().toLowerCase()).filter(word => word !== '');
+      });
+    
+    const editor = document.getElementById('editor');
+    const popup = document.getElementById('popup');
+    const suggestionDiv = document.getElementById('suggestion');
+    
+    function cleanWord(word) {
+        const cleaned = word.replace(/[.,\/#!$%\^&\*\(\)_\+\=\-\[\]{};:'"\\|<>?]/g, ' '); //doesnt work yet
+        return cleaned.replace(/\s+/g, ' ').trim();
+    }
+
+    function getClosestWords(inputWord, dataset) {
+        const cleanInput = cleanWord(inputWord);
+        const inputLength = inputWord.length;
+        const thresholdMultiplier = 0.6;
+        const maxCandidates = 5;
+
+        const filteredDataset = dataset.filter(word => {
+            const lengthDifference = Math.abs(cleanWord(word).length - inputLength);
+            return lengthDifference <= 3;
+        });
+
+        const calculateLayeredScore = (input, candidate) => {
+            const inputCleaned = cleanWord(input);
+            const candidateCleaned = cleanWord(candidate);
+
+            let score = 0;
+
+            let orderMatchScore = 0;
+            let candidateIndex = 0;
+            for (let i = 0; i < inputCleaned.length; i++) {
+                const letter = inputCleaned[i];
+                const indexInCandidate = candidateCleaned.indexOf(letter, candidateIndex);
+                if (indexInCandidate !== -1) {
+                    orderMatchScore++;
+                    candidateIndex = indexInCandidate + 1;
+                }
+            }
+            score += (orderMatchScore / inputCleaned.length) * 0.5;
+
+            const editMatches = generateEditVariations(inputCleaned);
+            if (editMatches.includes(candidateCleaned)) {
+                score += 0.3;
+            }
+
+            const editDistance = levenshteinDistance(inputCleaned, candidateCleaned);
+            score -= editDistance * 0.2;
+
+            const lengthDifference = Math.abs(inputCleaned.length - candidateCleaned.length);
+            score -= lengthDifference * 0.1;
+
+            if (candidateCleaned.startsWith(inputCleaned[0])) {
+                score += 0.1;
+            } else {
+                score -= 0.2;
+            }
+
+            return score;
+        };
+
+        const scoredWords = [];
+
+        for (let word of filteredDataset) {
+            const score = calculateLayeredScore(cleanInput, word);
+            scoredWords.push({ word, score });
+
+            if (scoredWords.length >= maxCandidates && score >= thresholdMultiplier) {
+                break;
+            }
+        }
+
+        scoredWords.sort((a, b) => b.score - a.score);
+        const threshold = scoredWords.length > 0 ? scoredWords[0].score * thresholdMultiplier : 0;
+        return scoredWords
+            .filter(entry => entry.score >= threshold)
+            .slice(0, maxCandidates)
+            .map(entry => entry.word);
+    }
+
+    function generateEditVariations(word) {
+    const variations = new Set();
+    const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+    const lettersInWord = new Set(word);
+
+    const maxEdits = word.length * 10;
+    const editsPerOperation = Math.floor(maxEdits / 4);
+
+    for (let i = 0; i < word.length && variations.size < editsPerOperation; i++) {
+        variations.add(word.slice(0, i) + word.slice(i + 1));
+    }
+
+    for (let i = 0; i <= word.length && variations.size < editsPerOperation * 2; i++) {
+        const proximityLetters = new Set();
+
+        for (let j = Math.max(0, i - 3); j < Math.min(word.length, i + 3); j++) {
+            proximityLetters.add(word[j]);
+        }
+
+        if (i > 0 && i <= word.length) {
+            const previousLetter = word[i - 1];
+            variations.add(word.slice(0, i) + previousLetter + word.slice(i));
+        }
+
+        for (let letter of proximityLetters) {
+            variations.add(word.slice(0, i) + letter + word.slice(i));
+            if (variations.size >= editsPerOperation * 2) break;
+        }
+
+        for (let letter of lettersInWord) {
+            if (!proximityLetters.has(letter)) {
+                variations.add(word.slice(0, i) + letter + word.slice(i));
+                if (variations.size >= editsPerOperation * 2) break;
+            }
+        }
+
+        for (let letter of alphabet) {
+            if (!lettersInWord.has(letter)) {
+                variations.add(word.slice(0, i) + letter + word.slice(i));
+                if (variations.size >= editsPerOperation * 2) break;
+            }
+        }
+    }
+
+    const chars = word.split('');
+    for (let i = 0; i < chars.length - 1 && variations.size < editsPerOperation * 3; i++) {
+        const switched = [...chars];
+        [switched[i], switched[i + 1]] = [switched[i + 1], switched[i]];
+        variations.add(switched.join(''));
+        if (variations.size >= editsPerOperation * 3) break;
+    }
+
+    for (let i = 0; i < word.length && variations.size < maxEdits; i++) {
+        for (let letter of alphabet) {
+            const substituted = word.slice(0, i) + letter + word.slice(i + 1);
+            variations.add(substituted);
+            if (variations.size >= maxEdits) break;
+        }
+    }
+
+    return Array.from(variations);
+}
+
+    function levenshteinDistance(a, b) {
+        const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+        for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+        for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+
+        for (let i = 1; i <= a.length; i++) {
+            for (let j = 1; j <= b.length; j++) {
+                if (a[i - 1] === b[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {
+                    dp[i][j] = Math.min(
+                        dp[i - 1][j - 1], // Substitution
+                        dp[i - 1][j], // Deletion
+                        dp[i][j - 1] // Insertion
+                    ) + 1;
+                }
+            }
+        }
+        return dp[a.length][b.length];
+    }
+
+    editor.addEventListener('input', () => {
+      const text = editor.innerText;
+      const words = text.split(/\s+/);
+      const html = words.map(word => {
+        const cleaned = cleanWord(word);
+        if (cleaned.trim() === '' || wordDataset.includes(cleaned.toLowerCase())) {
+          return word;
+        }
+        return `<span class="misspelled" data-word="${word}">${word}</span>`;
+      }).join(' ');
+      editor.innerHTML = html;
+      setCaretToEnd();
+    });
+
+    editor.addEventListener('click', (event) => {
+      const target = event.target;
+      if (target.classList.contains('misspelled')) {
+        const word = target.getAttribute('data-word').toLowerCase();
+        const suggestions = getClosestWords(word, wordDataset);
+        showPopup(target, suggestions);
+      } else {
+        popup.style.display = 'none';
+      }
+    });
+
+    function showPopup(target, suggestions) {
+      const rect = target.getBoundingClientRect();
+      suggestionDiv.innerHTML = suggestions.map(suggestion => 
+        `<button data-suggestion="${suggestion}">${suggestion}</button>`
+      ).join('');
+      
+      popup.style.display = 'flex';
+      popup.style.top = `${rect.bottom + window.scrollY}px`;
+      popup.style.left = `${rect.left + window.scrollX}px`;
+
+      popup.querySelectorAll('button').forEach(button => {
+        button.addEventListener('click', () => {
+            if (button.id === "ignorebutton") {
+                popup.style.display = 'none';
+                target.classList.remove('misspelled');
+                return
+            }
+          target.textContent = button.getAttribute('data-suggestion');
+          target.classList.remove('misspelled');
+          popup.style.display = 'none';
+        });
+      });
+    }
+
+    function setCaretToEnd() {
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  </script>
+</body>
+</html>
