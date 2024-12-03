@@ -22,7 +22,7 @@
         background-color: #e7e7e7;
     }
 
-    #editor {
+    #spellingbox {
         border: 2px solid rgba(85, 83, 83, 0.25);
         background-color: white;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -37,14 +37,9 @@
         white-space: pre-wrap;
         word-wrap: break-word;
     }
-    #editor:empty:not(:focus):before {
+    #spellingbox:empty:not(:focus):before {
         content: "Start typing here...";
         color: rgb(85, 83, 83);
-        cursor: text;
-    }
-    #editor:empty:not(:focus):after {
-        content: " by Rogier Goossen";
-        color: rgba(85, 83, 83, 0.2);
         cursor: text;
     }
 
@@ -66,6 +61,11 @@
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
         padding: 12px;
         z-index: 1000;
+        transition: 0.25s;
+        transform: scale(1);
+    }
+    .popup:hover {
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
 
     .heading, .footing {
@@ -76,11 +76,11 @@
         color: rgb(85, 83, 83);
     }
     .heading {
-        margin-bottom: 6px;
+        margin-bottom: 8px;
         height: 16px;
     }
     .footing {
-        margin-top: 12px;
+        margin-top: 6px;
         height: 16px;
     }
 
@@ -90,7 +90,7 @@
     }
     .suggestion button {
         box-sizing: border-box;
-        background-color: #47b382ce;
+        background-color: #47b39ace;
         padding: 0px 6px;
         font-size: 16px;
         color: white;
@@ -103,6 +103,9 @@
     }
     .suggestion button:hover {
         transform: translate(0px, -2px);
+    }
+    .suggestion button:active {
+        transform: translate(0px, 2px) scale(0.95);
     }
 
     .ignore {
@@ -119,11 +122,28 @@
     svg {
         transform: translate(0px, 2px);
     }
+
+    .credit {
+        position: absolute;
+        color: rgb(85, 83, 83);
+        margin: 8px;
+        font-size: 14px;
+        bottom: 0;
+        right: 0;
+
+        border: 2px solid rgba(85, 83, 83, 0.25);
+        background-color: white;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        box-sizing: border-box;
+        padding: 8px;
+    }
+    
   </style>
 </head>
 <body>
   <div>
-    <div id="editor" contenteditable="true" spellcheck="false" placeholder="Describe yourself here..."></div>
+    <div id="spellingbox" contenteditable="true" spellcheck="false"></div>
     <div id="popup" class="popup">
         <div class="heading">
             <p>
@@ -144,6 +164,7 @@
         </div>
     </div>
   </div>
+  <p class="credit">By Rogier Goossen</p>
 
   <script>
 let wordDataset = [];
@@ -167,7 +188,7 @@ fetch('words10k.txt')
         });
     });
 
-const editor = document.getElementById('editor');
+const spellingbox = document.getElementById('spellingbox');
 const popup = document.getElementById('popup');
 const suggestionDiv = document.getElementById('suggestion');
 
@@ -288,7 +309,7 @@ function levenshteinDistance(a, b) {
 function setCaretToEnd() {
     const range = document.createRange();
     const sel = window.getSelection();
-    range.selectNodeContents(editor);
+    range.selectNodeContents(spellingbox);
     range.collapse(false);
     sel.removeAllRanges();
     sel.addRange(range);
@@ -320,8 +341,8 @@ function showPopup(target, suggestions) {
     });
 }
 
-editor.addEventListener('input', () => {
-    const text = editor.innerText;
+spellingbox.addEventListener('input', () => {
+    const text = spellingbox.innerText;
     const words = text.split(/\s+/);
     const html = words.map(word => {
         const cleaned = cleanWord(word);
@@ -330,11 +351,11 @@ editor.addEventListener('input', () => {
         }
         return `<span class="misspelled" data-word="${word}">${word}</span>`;
     }).join(' ');
-    editor.innerHTML = html;
+    spellingbox.innerHTML = html;
     setCaretToEnd();
 });
 
-editor.addEventListener('click', (event) => {
+spellingbox.addEventListener('click', (event) => {
     const target = event.target;
     if (target.classList.contains('misspelled')) {
         const word = target.getAttribute('data-word').toLowerCase();
