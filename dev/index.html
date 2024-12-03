@@ -146,33 +146,34 @@
   </div>
 
   <script>
-    let wordDataset = [];
+let wordDataset = [];
+let ignoredWords = new Set();
 
-    fetch('words10k.txt')
+fetch('words10k.txt')
     .then(response => response.text())
     .then(data => {
         wordDataset = data
-        .split(/\r?\n/)
-        .map(word => word.trim().toLowerCase())
-        .filter(word => word !== '');
+            .split(/\r?\n/)
+            .map(word => word.trim().toLowerCase())
+            .filter(word => word !== '');
     });
 
-    const editor = document.getElementById('editor');
-    const popup = document.getElementById('popup');
-    const suggestionDiv = document.getElementById('suggestion');
+const editor = document.getElementById('editor');
+const popup = document.getElementById('popup');
+const suggestionDiv = document.getElementById('suggestion');
 
-    function cleanWord(word) {
-    return word.replace(/[.,\/#!$%^&*()_+=\-\[\]{};:'"\\|<>?]/g, ' ').replace(/\s+/g, ' ').trim();
-    }
+function cleanWord(word) {
+    return word.replace(/[.,\/#!$%^&*()_+=\-\[\]{};:'"\\|<>?]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+}
 
-    const phoneticMap = {
+const phoneticMap = {
     d: ['t'], t: ['d'], s: ['c', 'z'], c: ['s', 'k', 'z'], z: ['s', 'c'],
     k: ['c', 'g'], g: ['k', 'j'], b: ['p', 'v'], p: ['b', 'f'], v: ['b', 'f'],
     f: ['v', 'p'], m: ['n'], n: ['m'], l: ['r'], r: ['l'],
     i: ['y'], y: ['i'], o: ['u'], u: ['o']
-    };
+};
 
-    function calculateLayeredScore(input, candidate) {
+function calculateLayeredScore(input, candidate) {
     const inputCleaned = cleanWord(input);
     const candidateCleaned = cleanWord(candidate);
     let score = 0;
@@ -184,8 +185,8 @@
         const letter = inputCleaned[i];
         const indexInCandidate = candidateCleaned.indexOf(letter, candidateIndex);
         if (indexInCandidate !== -1) {
-        orderMatchScore++;
-        candidateIndex = indexInCandidate + 1;
+            orderMatchScore++;
+            candidateIndex = indexInCandidate + 1;
         }
     }
     score += (orderMatchScore / inputCleaned.length) * 0.5;
@@ -201,7 +202,7 @@
 
     inputLetterSet.forEach(letter => {
         if (phoneticMap[letter]) {
-        phoneticMap[letter].forEach(similar => phoneticSet.add(similar));
+            phoneticMap[letter].forEach(similar => phoneticSet.add(similar));
         }
     });
 
@@ -212,11 +213,11 @@
         let trulyUnique = 0;
 
         addedLetters.forEach(letter => {
-        if (phoneticSet.has(letter)) {
-            phoneticMatches++;
-        } else {
-            trulyUnique++;
-        }
+            if (phoneticSet.has(letter)) {
+                phoneticMatches++;
+            } else {
+                trulyUnique++;
+            }
         });
 
         score -= trulyUnique * 0.075;
@@ -232,9 +233,9 @@
     }
 
     return score;
-    }
+}
 
-    function getClosestWords(inputWord, dataset) {
+function getClosestWords(inputWord, dataset) {
     const cleanInput = cleanWord(inputWord);
     const inputLength = inputWord.length;
     const thresholdMultiplier = 0.6;
@@ -257,33 +258,33 @@
         .filter(entry => entry.score >= threshold)
         .slice(0, maxCandidates)
         .map(entry => entry.word);
-    }
+}
 
-    function levenshteinDistance(a, b) {
+function levenshteinDistance(a, b) {
     const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
     for (let i = 0; i <= a.length; i++) dp[i][0] = i;
     for (let j = 0; j <= b.length; j++) dp[0][j] = j;
 
     for (let i = 1; i <= a.length; i++) {
         for (let j = 1; j <= b.length; j++) {
-        dp[i][j] = a[i - 1] === b[j - 1]
-            ? dp[i - 1][j - 1]
-            : Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]) + 1;
+            dp[i][j] = a[i - 1] === b[j - 1]
+                ? dp[i - 1][j - 1]
+                : Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]) + 1;
         }
     }
     return dp[a.length][b.length];
-    }
+}
 
-    function setCaretToEnd() {
+function setCaretToEnd() {
     const range = document.createRange();
     const sel = window.getSelection();
     range.selectNodeContents(editor);
     range.collapse(false);
     sel.removeAllRanges();
     sel.addRange(range);
-    }
+}
 
-    function showPopup(target, suggestions) {
+function showPopup(target, suggestions) {
     const rect = target.getBoundingClientRect();
     suggestionDiv.innerHTML = suggestions.map(suggestion => 
         `<button data-suggestion="${suggestion}">${suggestion}</button>`
@@ -295,33 +296,35 @@
 
     popup.querySelectorAll('button').forEach(button => {
         button.addEventListener('click', () => {
-        if (button.id === "ignorebutton") {
-            popup.style.display = 'none';
+            if (button.id === "ignorebutton") {
+                const ignoredWord = cleanWord(target.getAttribute('data-word'));
+                ignoredWords.add(ignoredWord);
+                popup.style.display = 'none';
+                target.classList.remove('misspelled');
+                return;
+            }
+            target.textContent = button.getAttribute('data-suggestion');
             target.classList.remove('misspelled');
-            return;
-        }
-        target.textContent = button.getAttribute('data-suggestion');
-        target.classList.remove('misspelled');
-        popup.style.display = 'none';
+            popup.style.display = 'none';
         });
     });
-    }
+}
 
-    editor.addEventListener('input', () => {
+editor.addEventListener('input', () => {
     const text = editor.innerText;
     const words = text.split(/\s+/);
     const html = words.map(word => {
         const cleaned = cleanWord(word);
-        if (cleaned === '' || wordDataset.includes(cleaned)) {
-        return word;
+        if (cleaned === '' || wordDataset.includes(cleaned) || ignoredWords.has(cleaned)) {
+            return word;
         }
         return `<span class="misspelled" data-word="${word}">${word}</span>`;
     }).join(' ');
     editor.innerHTML = html;
     setCaretToEnd();
-    });
+});
 
-    editor.addEventListener('click', (event) => {
+editor.addEventListener('click', (event) => {
     const target = event.target;
     if (target.classList.contains('misspelled')) {
         const word = target.getAttribute('data-word').toLowerCase();
@@ -330,7 +333,7 @@
     } else {
         popup.style.display = 'none';
     }
-    });
+});
   </script>
 </body>
 </html>
