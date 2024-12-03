@@ -148,6 +148,7 @@
   <script>
 let wordDataset = [];
 let ignoredWords = new Set();
+let lengthGroups = {};
 
 fetch('words10k.txt')
     .then(response => response.text())
@@ -156,6 +157,14 @@ fetch('words10k.txt')
             .split(/\r?\n/)
             .map(word => word.trim().toLowerCase())
             .filter(word => word !== '');
+
+        wordDataset.forEach(word => {
+            const length = word.length;
+            if (!lengthGroups[length]) {
+                lengthGroups[length] = [];
+            }
+            lengthGroups[length].push(word);
+        });
     });
 
 const editor = document.getElementById('editor');
@@ -235,18 +244,19 @@ function calculateLayeredScore(input, candidate) {
     return score;
 }
 
-function getClosestWords(inputWord, dataset) {
+function getClosestWords(inputWord) {
     const cleanInput = cleanWord(inputWord);
     const inputLength = inputWord.length;
     const thresholdMultiplier = 0.6;
     const maxCandidates = 5;
 
-    const filteredDataset = dataset.filter(word => {
-        const lengthDifference = Math.abs(cleanWord(word).length - inputLength);
-        return lengthDifference <= 2;
-    });
+    const relevantWords = [
+        ...(lengthGroups[inputLength - 1] || []),
+        ...(lengthGroups[inputLength] || []),
+        ...(lengthGroups[inputLength + 1] || [])
+    ];
 
-    const scoredWords = filteredDataset.map(word => ({
+    const scoredWords = relevantWords.map(word => ({
         word,
         score: calculateLayeredScore(cleanInput, word)
     }));
@@ -328,12 +338,13 @@ editor.addEventListener('click', (event) => {
     const target = event.target;
     if (target.classList.contains('misspelled')) {
         const word = target.getAttribute('data-word').toLowerCase();
-        const suggestions = getClosestWords(word, wordDataset);
+        const suggestions = getClosestWords(word);
         showPopup(target, suggestions);
     } else {
         popup.style.display = 'none';
     }
 });
+
   </script>
 </body>
 </html>
