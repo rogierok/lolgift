@@ -4,123 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Spell Checker</title>
+  <script src="spellchecker.js"></script>
   <style>
     * {
-        font-family: Verdana, sans-serif;
-        padding: 0;
         margin: 0;
+        padding: 0;
+        font-family: Verdana, sans-serif;
     }
 
-    body {
+    #sc_spellingbox {
         box-sizing: border-box;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         height: 100vh;
-        width: 100vw;
-        background-color: #e7e7e7;
+        overflow: hidden;
+        padding: 4px;
     }
 
-    #spellingbox {
-        border: 2px solid rgba(85, 83, 83, 0.25);
-        background-color: white;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-        border-radius: 12px;
-        box-sizing: border-box;
-        padding: 20px;
-        width: 80vw;
-        min-height: 60vh;
-        font-size: 16px;
-        line-height: 1.5;
-        outline: none;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-    }
-    #spellingbox:empty:not(:focus):before {
-        content: "Start typing here...";
-        color: rgb(85, 83, 83);
-        cursor: text;
-    }
-
-    .misspelled {
-        text-decoration: underline solid #ff5757 2px;
-        background-color: rgba(255, 87, 87, 0.33);
-        cursor: pointer;
-    }
-    .popup {
-        font-size: 16px;
-        margin-top: 4px;
-        box-sizing: border-box;
-        position: absolute;
-        display: none;
-        flex-direction: column;
-        background: #fff;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-        padding: 12px;
-        z-index: 1000;
-        transition: 0.25s;
-        transform: scale(1);
-    }
-    .popup:hover {
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .heading, .footing {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        color: rgb(85, 83, 83);
-    }
-    .heading {
-        margin-bottom: 8px;
-        height: 16px;
-    }
-    .footing {
-        margin-top: 6px;
-        height: 16px;
-    }
-
-    .suggestion {
-        display: flex;
-        flex-direction: row;
-    }
-    .suggestion button {
-        box-sizing: border-box;
-        background-color: #47b39ace;
-        padding: 0px 6px;
-        font-size: 16px;
-        color: white;
+    #sc_spellingbox:focus {
         border: none;
-        border-radius: 4px;
-        margin: 0px 4px 0px 0px;
-        height: 30px;
-        cursor: pointer;
-        transition: 0.25s;
-    }
-    .suggestion button:hover {
-        transform: translate(0px, -2px);
-    }
-    .suggestion button:active {
-        transform: translate(0px, 2px) scale(0.95);
-    }
-
-    .ignore {
-        color: rgb(85, 83, 83);
-        font-size: 16px;
-        border: none;
-        background-color: white;
-        cursor: pointer;
-    }
-    .ignore:hover {
-        text-decoration: underline;
-    }
-
-    svg {
-        transform: translate(0px, 2px);
+        outline: none
     }
 
     .credit {
@@ -134,238 +35,15 @@
         border: 2px solid rgba(85, 83, 83, 0.25);
         background-color: white;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-        border-radius: 12px;
+        border-radius: 8px;
         box-sizing: border-box;
-        padding: 8px;
+        padding: 6px;
     }
     
   </style>
 </head>
 <body>
   <div>
-    <div id="spellingbox" contenteditable="true" spellcheck="false"></div>
-    <div id="popup" class="popup">
-        <div class="heading">
-            <p>
-                <svg width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="m15.97 17.031c-1.479 1.238-3.384 1.985-5.461 1.985-4.697 0-8.509-3.812-8.509-8.508s3.812-8.508 8.509-8.508c4.695 0 8.508 3.812 8.508 8.508 0 2.078-.747 3.984-1.985 5.461l4.749 4.75c.146.146.219.338.219.531 0 .587-.537.75-.75.75-.192 0-.384-.073-.531-.22zm-5.461-13.53c-3.868 0-7.007 3.14-7.007 7.007s3.139 7.007 7.007 7.007c3.866 0 7.007-3.14 7.007-7.007s-3.141-7.007-7.007-7.007z" fill="#555353"/>
-                </svg>
-                Suggestions:
-            </p>
-        </div>
-        <div id="suggestion" class="suggestion"></div>
-        <div class="footing">
-            <button id="ignorebutton" class="ignore">Ignore</button>
-            <!-- <a href="#" id="info">
-                <svg width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm1.25 17c0 .69-.559 1.25-1.25 1.25-.689 0-1.25-.56-1.25-1.25s.561-1.25 1.25-1.25c.691 0 1.25.56 1.25 1.25zm1.393-9.998c-.608-.616-1.515-.955-2.551-.955-2.18 0-3.59 1.55-3.59 3.95h2.011c0-1.486.829-2.013 1.538-2.013.634 0 1.307.421 1.364 1.226.062.847-.39 1.277-.962 1.821-1.412 1.343-1.438 1.993-1.432 3.468h2.005c-.013-.664.03-1.203.935-2.178.677-.73 1.519-1.638 1.536-3.022.011-.924-.284-1.719-.854-2.297z" fill="#555353"/>
-                </svg>
-            </a> -->
-        </div>
-    </div>
+    <div contenteditable="true" spellcheck="false" id="sc_spellingbox" placeholder="Click here to start typing.."></div>
   </div>
   <p class="credit">By Rogier Goossen</p>
-
-  <script>
-let wordDataset = [];
-let ignoredWords = new Set();
-let lengthGroups = {};
-
-fetch('words10k.txt')
-    .then(response => response.text())
-    .then(data => {
-        wordDataset = data
-            .split(/\r?\n/)
-            .map(word => word.trim().toLowerCase())
-            .filter(word => word !== '');
-
-        wordDataset.forEach(word => {
-            const length = word.length;
-            if (!lengthGroups[length]) {
-                lengthGroups[length] = [];
-            }
-            lengthGroups[length].push(word);
-        });
-    });
-
-const spellingbox = document.getElementById('spellingbox');
-const popup = document.getElementById('popup');
-const suggestionDiv = document.getElementById('suggestion');
-
-function cleanWord(word) {
-    return word.replace(/[.,\/#!$%^&*()_+=\-\[\]{};:'"\\|<>?]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-}
-
-const phoneticMap = {
-    d: ['t'], t: ['d'], s: ['c', 'z'], c: ['s', 'k', 'z'], z: ['s', 'c'],
-    k: ['c', 'g'], g: ['k', 'j'], b: ['p', 'v'], p: ['b', 'f'], v: ['b', 'f'],
-    f: ['v', 'p'], m: ['n'], n: ['m'], l: ['r'], r: ['l'],
-    i: ['y'], y: ['i'], o: ['u'], u: ['o']
-};
-
-function calculateLayeredScore(input, candidate) {
-    const inputCleaned = cleanWord(input);
-    const candidateCleaned = cleanWord(candidate);
-    let score = 0;
-
-    let orderMatchScore = 0;
-    let candidateIndex = 0;
-
-    for (let i = 0; i < inputCleaned.length; i++) {
-        const letter = inputCleaned[i];
-        const indexInCandidate = candidateCleaned.indexOf(letter, candidateIndex);
-        if (indexInCandidate !== -1) {
-            orderMatchScore++;
-            candidateIndex = indexInCandidate + 1;
-        }
-    }
-    score += (orderMatchScore / inputCleaned.length) * 0.5;
-
-    const editDistance = levenshteinDistance(inputCleaned, candidateCleaned);
-    score -= editDistance * 0.2;
-
-    const lengthDifference = Math.abs(inputCleaned.length - candidateCleaned.length);
-    score -= lengthDifference * 0.1;
-
-    const inputLetterSet = new Set(inputCleaned);
-    const phoneticSet = new Set();
-
-    inputLetterSet.forEach(letter => {
-        if (phoneticMap[letter]) {
-            phoneticMap[letter].forEach(similar => phoneticSet.add(similar));
-        }
-    });
-
-    const addedLetters = Array.from(candidateCleaned).filter(letter => !inputLetterSet.has(letter));
-
-    if (addedLetters.length > 0) {
-        let phoneticMatches = 0;
-        let trulyUnique = 0;
-
-        addedLetters.forEach(letter => {
-            if (phoneticSet.has(letter)) {
-                phoneticMatches++;
-            } else {
-                trulyUnique++;
-            }
-        });
-
-        score -= trulyUnique * 0.075;
-        score -= phoneticMatches * 0.02;
-    } else {
-        score += 0.1;
-    }
-
-    if (candidateCleaned.startsWith(inputCleaned[0])) {
-        score += 0.15;
-    } else {
-        score -= 0.25;
-    }
-
-    return score;
-}
-
-function getClosestWords(inputWord) {
-    const cleanInput = cleanWord(inputWord);
-    const inputLength = inputWord.length;
-    const thresholdMultiplier = 0.6;
-    const maxCandidates = 5;
-
-    const relevantWords = [
-        ...(lengthGroups[inputLength - 1] || []),
-        ...(lengthGroups[inputLength] || []),
-        ...(lengthGroups[inputLength + 1] || [])
-    ];
-
-    const scoredWords = relevantWords.map(word => ({
-        word,
-        score: calculateLayeredScore(cleanInput, word)
-    }));
-
-    scoredWords.sort((a, b) => b.score - a.score);
-
-    const threshold = scoredWords.length > 0 ? scoredWords[0].score * thresholdMultiplier : 0;
-    return scoredWords
-        .filter(entry => entry.score >= threshold)
-        .slice(0, maxCandidates)
-        .map(entry => entry.word);
-}
-
-function levenshteinDistance(a, b) {
-    const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
-    for (let i = 0; i <= a.length; i++) dp[i][0] = i;
-    for (let j = 0; j <= b.length; j++) dp[0][j] = j;
-
-    for (let i = 1; i <= a.length; i++) {
-        for (let j = 1; j <= b.length; j++) {
-            dp[i][j] = a[i - 1] === b[j - 1]
-                ? dp[i - 1][j - 1]
-                : Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]) + 1;
-        }
-    }
-    return dp[a.length][b.length];
-}
-
-function setCaretToEnd() {
-    const range = document.createRange();
-    const sel = window.getSelection();
-    range.selectNodeContents(spellingbox);
-    range.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(range);
-}
-
-function showPopup(target, suggestions) {
-    const rect = target.getBoundingClientRect();
-    suggestionDiv.innerHTML = suggestions.map(suggestion => 
-        `<button data-suggestion="${suggestion}">${suggestion}</button>`
-    ).join('');
-
-    popup.style.display = 'flex';
-    popup.style.top = `${rect.bottom + window.scrollY}px`;
-    popup.style.left = `${rect.left + window.scrollX}px`;
-
-    popup.querySelectorAll('button').forEach(button => {
-        button.addEventListener('click', () => {
-            if (button.id === "ignorebutton") {
-                const ignoredWord = cleanWord(target.getAttribute('data-word'));
-                ignoredWords.add(ignoredWord);
-                popup.style.display = 'none';
-                target.classList.remove('misspelled');
-                return;
-            }
-            target.textContent = button.getAttribute('data-suggestion');
-            target.classList.remove('misspelled');
-            popup.style.display = 'none';
-        });
-    });
-}
-
-spellingbox.addEventListener('input', () => {
-    const text = spellingbox.innerText;
-    const words = text.split(/\s+/);
-    const html = words.map(word => {
-        const cleaned = cleanWord(word);
-        if (cleaned === '' || wordDataset.includes(cleaned) || ignoredWords.has(cleaned)) {
-            return word;
-        }
-        return `<span class="misspelled" data-word="${word}">${word}</span>`;
-    }).join(' ');
-    spellingbox.innerHTML = html;
-    setCaretToEnd();
-});
-
-spellingbox.addEventListener('click', (event) => {
-    const target = event.target;
-    if (target.classList.contains('misspelled')) {
-        const word = target.getAttribute('data-word').toLowerCase();
-        const suggestions = getClosestWords(word);
-        showPopup(target, suggestions);
-    } else {
-        popup.style.display = 'none';
-    }
-});
-
-  </script>
-</body>
-</html>
